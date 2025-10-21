@@ -32,8 +32,9 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("CK3 Gene Homogenizer")
-        self.geometry("1000x600")
+        self.geometry("1600x600")
         self.configure(bg="#2e2e2e")
+
         style = ttk.Style(self)
         style.theme_use('clam')
         style.configure("TLabel", foreground="#dddddd", background="#2e2e2e")
@@ -42,8 +43,10 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         main_container = tk.Frame(self, bg="#2e2e2e")
         main_container.pack(fill="both", expand=True, padx=10, pady=5)
 
+        # LEFT SIDE
         left_side = tk.Frame(main_container, bg="#2e2e2e")
         left_side.pack(side="left", fill="both", expand=True, padx=(0, 5))
+
         input_header = tk.Frame(left_side, bg="#2e2e2e")
         input_header.pack(fill="x", pady=(0, 5))
         ttk.Label(input_header, text="Input DNA String (Drag & Drop or Paste)").pack(side="left")
@@ -55,14 +58,18 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         self.input_text.pack(side="right", fill="both", expand=True)
         for ev in ("<KeyRelease>", "<<Paste>>", "<ButtonRelease-2>"):
             self.input_text.bind(ev, self.on_input_change_delayed)
+
         self.linenumbers_in = LineNumbers(self.input_frame, self.input_text, width=40, bg="#3a3a3a")
         self.linenumbers_in.pack(side="left", fill="y")
+
         scroll_y_in = ttk.Scrollbar(self.input_frame, orient="vertical", command=self.on_scroll_in)
         scroll_y_in.pack(side="right", fill="y")
         self.input_text.config(yscrollcommand=scroll_y_in.set)
 
+        # RIGHT SIDE
         right_side = tk.Frame(main_container, bg="#2e2e2e")
         right_side.pack(side="right", fill="both", expand=True, padx=(5, 0))
+
         output_header = tk.Frame(right_side, bg="#2e2e2e")
         output_header.pack(fill="x", pady=(0, 5))
         ttk.Label(output_header, text="Processed DNA Output").pack(side="left")
@@ -72,8 +79,10 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         self.output_frame.pack(fill="both", expand=True)
         self.output_text = tk.Text(self.output_frame, wrap="none", bg="#111722", fg="#aaffff", insertbackground='white', font=("Consolas", 11), state="disabled")
         self.output_text.pack(side="right", fill="both", expand=True)
+
         self.linenumbers_out = LineNumbers(self.output_frame, self.output_text, width=40, bg="#3a3a3a")
         self.linenumbers_out.pack(side="left", fill="y")
+
         scroll_y_out = ttk.Scrollbar(self.output_frame, orient="vertical", command=self.on_scroll_out)
         scroll_y_out.pack(side="right", fill="y")
         self.output_text.config(yscrollcommand=scroll_y_out.set)
@@ -105,9 +114,16 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
             messagebox.showinfo("Info", "No output to copy.")
 
     def on_scroll_in(self, *args):
-        self.input_text.yview(*args); self.output_text.yview_moveto(self.input_text.yview()[0]); self.linenumbers_in.redraw(); self.linenumbers_out.redraw()
+        self.input_text.yview(*args)
+        self.output_text.yview_moveto(self.input_text.yview()[0])
+        self.linenumbers_in.redraw()
+        self.linenumbers_out.redraw()
+
     def on_scroll_out(self, *args):
-        self.output_text.yview(*args); self.input_text.yview_moveto(self.output_text.yview()[0]); self.linenumbers_in.redraw(); self.linenumbers_out.redraw()
+        self.output_text.yview(*args)
+        self.input_text.yview_moveto(self.output_text.yview()[0])
+        self.linenumbers_in.redraw()
+        self.linenumbers_out.redraw()
 
     def drop_file(self, event):
         data = event.data.strip()
@@ -136,22 +152,44 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         if not text.strip():
             self.status_label.config(text="Idle - Paste or drag DNA file to process")
             return
-        self.status_label.config(text="Processing..."); self.update_idletasks()
+        self.status_label.config(text="Processing...")
+        self.update_idletasks()
         processed = self.process_gene_data(text)
-        self.output_text.config(state=tk.NORMAL); self.output_text.delete("1.0", tk.END);
-        self.output_text.insert(tk.END, processed); self.output_text.config(state=tk.DISABLED)
-        self.status_label.config(text="Done - Output ready to copy"); self.linenumbers_out.redraw()
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.delete("1.0", tk.END)
+        self.output_text.insert(tk.END, processed)
+        self.output_text.config(state=tk.DISABLED)
+        self.status_label.config(text="Done - Output ready to copy")
+        self.linenumbers_out.redraw()
 
     @staticmethod
     def process_gene_data(input_text):
-        processed=[]
-        patt=re.compile(r'^(\s*[\w_]+\s*=\s*\{\s*)(\"[^\"]+\"|\d+)\s+(\d+)\s+(\"[^\"]+\"|\d+)\s+(\d+)\s*(\})', re.MULTILINE)
-        for ln in input_text.splitlines():
-            m=patt.match(ln)
-            if m:
-                ln=f"{m.group(1)}{m.group(2)} {m.group(3)} {m.group(2)} {m.group(3)} {m.group(6)}"
-            processed.append(ln)
-        return "\n".join(processed)
+        processed_lines = []
+        pattern = re.compile(
+            r'^(\s*[\w_]+\s*=\s*\{\s*)'
+            r'(\"[^\"]+\"|\d+)\s+'
+            r'(\d+)\s+'
+            r'(\"[^\"]+\"|\d+)\s+'
+            r'(\d+)\s*'
+            r'(\})',
+            re.MULTILINE
+        )
+        for line in input_text.splitlines():
+            match = pattern.match(line)
+            if match:
+                new_line = "{}{} {} {} {} {}".format(
+                    match.group(1),
+                    match.group(2),
+                    match.group(3),
+                    match.group(2),
+                    match.group(3),
+                    match.group(6)
+                )
+                processed_lines.append(new_line)
+            else:
+                processed_lines.append(line)
+        return "\n".join(processed_lines)
 
 if __name__ == "__main__":
-    GeneProcessorGUI().mainloop()
+    root = GeneProcessorGUI()
+    root.mainloop()
