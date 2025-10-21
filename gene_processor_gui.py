@@ -89,12 +89,15 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         right_side = tk.Frame(main_container, bg="#2e2e2e")
         right_side.pack(side="right", fill="both", expand=True, padx=(5, 0))
 
-        # Output header (aligned with input header)
+        # Output header
         output_header = tk.Frame(right_side, bg="#2e2e2e")
         output_header.pack(fill="x", pady=(0, 5))
 
         label_output = ttk.Label(output_header, text="Processed DNA Output")
         label_output.pack(side="left")
+
+        copy_button = ttk.Button(output_header, text="Copy", command=self.copy_output, width=8)
+        copy_button.pack(side="right")
 
         # Output text frame
         self.output_frame = tk.Frame(right_side, bg="#3a3a3a")
@@ -131,6 +134,18 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         self.status_label.config(text="Idle - Paste or drag DNA file to process")
         self.linenumbers_in.redraw()
         self.linenumbers_out.redraw()
+
+    def copy_output(self):
+        """Copy the processed DNA output to clipboard."""
+        output_content = self.output_text.get("1.0", tk.END).strip()
+        if output_content:
+            self.clipboard_clear()
+            self.clipboard_append(output_content)
+            self.status_label.config(text="Copied to clipboard!")
+            # Reset status after 2 seconds
+            self.after(2000, lambda: self.status_label.config(text="Done - Output ready to copy"))
+        else:
+            messagebox.showinfo("Info", "No output to copy. Please process some DNA first.")
 
     def on_scroll_in(self, *args):
         self.input_text.yview(*args)
