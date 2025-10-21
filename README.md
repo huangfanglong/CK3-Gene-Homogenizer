@@ -31,7 +31,7 @@ A Python application to **"homogenize" Crusader Kings 3 character DNA data**.
    ```bash
    python ck3_gene_homogenizer.py
    ```
-   Or simply run the pre-built executable (if available) — no Python installation needed.
+   Or simply run the pre-built .exe executable.
 
 ---
 
