@@ -61,7 +61,7 @@ A Python application to **"homogenize" Crusader Kings 3 character DNA data**.
 ## Build Executable (Optional)
 To create a standalone `.exe` file:
 ```bash
-pyinstaller --onefile ck3_gene_homogenizer.py
+pyinstaller --onefile --noconsole ck3_gene_homogenizer.py
 ```
 
 ---
