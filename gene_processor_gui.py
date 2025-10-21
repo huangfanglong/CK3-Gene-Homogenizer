@@ -45,13 +45,29 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         style = ttk.Style(self)
         style.theme_use('clam')
         style.configure("TLabel", foreground="#dddddd", background="#2e2e2e")
-        style.configure("TButton", foreground="#333333")
+        style.configure("TButton", foreground="#ffffff", background="#555555")
 
-        label_input = ttk.Label(self, text="Input DNA String (Drag & Drop or Paste)")
-        label_input.pack(anchor='nw', padx=10, pady=5)
+        # Create main container for both sides
+        main_container = tk.Frame(self, bg="#2e2e2e")
+        main_container.pack(fill="both", expand=True, padx=10, pady=5)
 
-        self.input_frame = tk.Frame(self, bg="#3a3a3a")
-        self.input_frame.pack(side="left", fill="both", expand=True, padx=10, pady=5)
+        # LEFT SIDE - Input
+        left_side = tk.Frame(main_container, bg="#2e2e2e")
+        left_side.pack(side="left", fill="both", expand=True, padx=(0, 5))
+
+        # Header frame for label and clear button
+        input_header = tk.Frame(left_side, bg="#2e2e2e")
+        input_header.pack(fill="x", pady=(0, 5))
+
+        label_input = ttk.Label(input_header, text="Input DNA String (Drag & Drop or Paste)")
+        label_input.pack(side="left")
+
+        clear_button = ttk.Button(input_header, text="Clear", command=self.clear_input, width=8)
+        clear_button.pack(side="right")
+
+        # Input text frame
+        self.input_frame = tk.Frame(left_side, bg="#3a3a3a")
+        self.input_frame.pack(fill="both", expand=True)
 
         self.input_text = tk.Text(self.input_frame, wrap="none", bg="#1e1e1e", fg="#eeeeee", 
                                   insertbackground='white', font=("Consolas", 11))
@@ -60,16 +76,29 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         # Bind multiple events for input changes
         self.input_text.bind("<KeyRelease>", self.on_input_change)
         self.input_text.bind("<<Paste>>", self.on_input_change_delayed)
-        self.input_text.bind("<ButtonRelease-2>", self.on_input_change_delayed)  # Middle mouse paste
+        self.input_text.bind("<ButtonRelease-2>", self.on_input_change_delayed)
 
         self.linenumbers_in = LineNumbers(self.input_frame, self.input_text, width=40, bg="#3a3a3a")
         self.linenumbers_in.pack(side="left", fill="y")
 
-        label_output = ttk.Label(self, text="Processed DNA Output")
-        label_output.pack(anchor='nw', padx=10, pady=5)
+        scroll_y_in = ttk.Scrollbar(self.input_frame, orient="vertical", command=self.on_scroll_in)
+        scroll_y_in.pack(side="right", fill="y")
+        self.input_text.config(yscrollcommand=scroll_y_in.set)
 
-        self.output_frame = tk.Frame(self, bg="#3a3a3a")
-        self.output_frame.pack(side="right", fill="both", expand=True, padx=10, pady=5)
+        # RIGHT SIDE - Output
+        right_side = tk.Frame(main_container, bg="#2e2e2e")
+        right_side.pack(side="right", fill="both", expand=True, padx=(5, 0))
+
+        # Output header (aligned with input header)
+        output_header = tk.Frame(right_side, bg="#2e2e2e")
+        output_header.pack(fill="x", pady=(0, 5))
+
+        label_output = ttk.Label(output_header, text="Processed DNA Output")
+        label_output.pack(side="left")
+
+        # Output text frame
+        self.output_frame = tk.Frame(right_side, bg="#3a3a3a")
+        self.output_frame.pack(fill="both", expand=True)
 
         self.output_text = tk.Text(self.output_frame, wrap="none", bg="#111722", fg="#aaffff", 
                                    insertbackground='white', font=("Consolas", 11), state="normal")
@@ -79,21 +108,29 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         self.linenumbers_out = LineNumbers(self.output_frame, self.output_text, width=40, bg="#3a3a3a")
         self.linenumbers_out.pack(side="left", fill="y")
 
-        scroll_y_in = ttk.Scrollbar(self.input_frame, orient="vertical", command=self.on_scroll_in)
-        scroll_y_in.pack(side="right", fill="y")
-        self.input_text.config(yscrollcommand=scroll_y_in.set)
-
         scroll_y_out = ttk.Scrollbar(self.output_frame, orient="vertical", command=self.on_scroll_out)
         scroll_y_out.pack(side="right", fill="y")
         self.output_text.config(yscrollcommand=scroll_y_out.set)
 
+        # Drag and drop support
         if tkinterdnd2:
             self.input_text.drop_target_register(tkinterdnd2.DND_FILES)
             self.input_text.dnd_bind('<<Drop>>', self.drop_file)
 
+        # Status bar at bottom
         self.status_label = ttk.Label(self, text="Idle - Paste or drag DNA file to process", 
                                      background="#2e2e2e", foreground="#888888")
         self.status_label.pack(side="bottom", fill="x", padx=10, pady=5)
+
+    def clear_input(self):
+        """Clear both input and output boxes."""
+        self.input_text.delete("1.0", tk.END)
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.delete("1.0", tk.END)
+        self.output_text.config(state=tk.DISABLED)
+        self.status_label.config(text="Idle - Paste or drag DNA file to process")
+        self.linenumbers_in.redraw()
+        self.linenumbers_out.redraw()
 
     def on_scroll_in(self, *args):
         self.input_text.yview(*args)
@@ -117,7 +154,6 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
                         data = f.read()
                     self.input_text.delete("1.0", tk.END)
                     self.input_text.insert(tk.END, data)
-                    # Trigger processing after file load
                     self.on_input_change()
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to read file:\n{e}")
@@ -132,7 +168,6 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         return data.split()
 
     def on_input_change_delayed(self, event=None):
-        # For paste events, delay slightly to ensure text is inserted
         self.after(100, self.on_input_change)
 
     def on_input_change(self, event=None):
@@ -160,31 +195,24 @@ class GeneProcessorGUI(tkinterdnd2.Tk if tkinterdnd2 else tk.Tk):
         """Process gene data by replacing last 2 values with first 2 values."""
         processed_lines = []
 
-        # Pattern matches: gene_name={ val1 num1 val2 num2 }
         line_pattern = re.compile(
-            r'^(\s*[\w_]+\s*=\s*\{\s*)'      # gene name and opening brace
-            r'(\"[^\"]+\"|\d+)\s+'            # val1 (quoted string or number)
-            r'(\d+)\s+'                           # num1
-            r'(\"[^\"]+\"|\d+)\s+'            # val2 (to be replaced)
-            r'(\d+)\s*'                           # num2 (to be replaced)
-            r'(\})'                                # closing brace
+            r'^(\s*[\w_]+\s*=\s*\{\s*)'
+            r'(\"[^\"]+\"|\d+)\s+'
+            r'(\d+)\s+'
+            r'(\"[^\"]+\"|\d+)\s+'
+            r'(\d+)\s*'
+            r'(\})'
         )
 
         for line in input_text.splitlines():
             match = line_pattern.match(line)
             if match:
-                # Replace val2/num2 with val1/num1
                 new_line = "{}{} {} {} {} {}".format(
-                    match.group(1),  # prefix with gene name and {
-                    match.group(2),  # val1
-                    match.group(3),  # num1
-                    match.group(2),  # val1 again (replacing val2)
-                    match.group(3),  # num1 again (replacing num2)
-                    match.group(6)   # closing }
+                    match.group(1), match.group(2), match.group(3),
+                    match.group(2), match.group(3), match.group(6)
                 )
                 processed_lines.append(new_line)
             else:
-                # Keep line as-is if no match
                 processed_lines.append(line)
 
         return "\n".join(processed_lines)
